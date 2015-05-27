@@ -1,4 +1,4 @@
-from ..utils import get_singleton
+from ..utils import get_singleton, get_cache, sanitize_cache_key
 from copy import copy
 import flask_imagekit.conf as conf
 
@@ -30,14 +30,12 @@ class CachedFileBackend(object):
     @property
     def cache(self):
         if not getattr(self, '_cache', None):
-            from django.conf import settings
-            self._CACHE = get_cache(settings.IMAGEKIT_CACHE_BACKEND)
+            self._CACHE = get_cache(conf.IMAGEKIT_CACHE_BACKEND)
         return self._cache
 
     def get_key(self, file):
-        from django.conf import settings
         return sanitize_cache_key('%s%s-state' %
-                                  (settings.IMAGEKIT_CACHE_PREFIX, file.name))
+                                  (conf.IMAGEKIT_CACHE_PREFIX, file.name))
 
     def get_state(self, file, check_if_unknown=True):
         key = self.get_key(file)
