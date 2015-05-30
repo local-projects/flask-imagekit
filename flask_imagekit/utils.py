@@ -10,6 +10,16 @@ from pilkit.utils import *
 
 bad_memcached_key_chars = re.compile('[\u0000-\u001f\\s]+')
 
+
+def get_nonabstract_descendants(model):
+    """ Returns all non-abstract descendants of the model. """
+    if not model._meta.abstract:
+        yield model
+    for s in model.__subclasses__():
+        for m in get_nonabstract_descendants(s):
+            yield m
+
+
 def get_by_qname(path, desc):
     try:
         dot = path.rindex('.')

@@ -8,3 +8,5 @@ existence_required = imagekit_signals.signal('existence_required')
 
 # Source group signals
 source_saved = imagekit_signals.signal('source_saved')
+
+post_init = imagekit_signals.signal('post_init')

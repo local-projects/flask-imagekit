@@ -1,6 +1,10 @@
-from ...specs import SpecHost
+from functools import wraps
 from .utils import ImageSpecFileDescriptor
+from ...specs import SpecHost
 from ...registry import register
+from ...signals import post_init
+from ...specs.sourcegroups import ImageFieldSourceGroup
+
 
 class SpecHostField(SpecHost):
     def _set_spec_id(self, cls, name):
@@ -43,6 +47,10 @@ class ImageSpecField(SpecHostField):
             setattr(cls, name, ImageSpecFileDescriptor(self, name, source))
             self._set_spec_id(cls, name)
 
+            # We don't have the equivalent of a post_init signal,
+            # so we must make our own with a decorator
+            cls.__init__ = model_init_decorator(cls.__init__)
+
             # Add the model and field as a source for this spec id
             register.source_group(self.spec_id, ImageFieldSourceGroup(cls, source))
 
@@ -50,3 +58,10 @@ class ImageSpecField(SpecHostField):
             register_source_group(self.source)
         else:
             raise Exception("Must define a source")
+
+def model_init_decorator(func):
+    @wraps
+    def model_init(self, *args, **kwargs):
+        func(self, *args, **kwargs)
+        post_init.send(sender=self.__class__, instance=self)
+    return model_init
