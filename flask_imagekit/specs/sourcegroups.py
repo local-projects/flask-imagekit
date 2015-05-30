@@ -1,5 +1,6 @@
 from ..cachefiles import LazyImageCacheFile
 
+
 class SourceGroupFilesGenerator(object):
     """
     A Python generator that yields cache file objects for source groups.

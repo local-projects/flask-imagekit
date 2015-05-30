@@ -1,10 +1,11 @@
 import flask_imagekit.conf as conf
 from copy import copy
-from ..exceptions import MissingSource
+from ..exceptions import MissingSource, AlreadyRegistered
 from ..cachefiles.backends import get_default_cachefile_backend
 from ..cachefiles.strategies import load_strategy
 from ..utils import open_image, get_by_qname, process_image
 from .. import hashers
+from ..registry import generator_registry, register
 
 class BaseImageSpec(object):
     """
@@ -136,3 +137,87 @@ class ImageSpec(BaseImageSpec):
         return process_image(img, processors=self.processors,
                              format=self.format, autoconvert=self.autoconvert,
                              options=self.options)
+
+
+def create_spec_class(class_attrs):
+
+    class DynamicSpecBase(ImageSpec):
+        def __reduce__(self):
+            try:
+                getstate = self.__getstate__
+            except AttributeError:
+                state = self.__dict__
+            else:
+                state = getstate()
+            return (create_spec, (class_attrs, state))
+
+    return type('DynamicSpec', (DynamicSpecBase,), class_attrs)
+
+
+def create_spec(class_attrs, state):
+    cls = create_spec_class(class_attrs)
+    instance = cls.__new__(cls)  # Create an instance without calling the __init__ (which may have required args).
+    try:
+        setstate = instance.__setstate__
+    except AttributeError:
+        instance.__dict__ = state
+    else:
+        setstate(state)
+    return instance
+
+
+class SpecHost(object):
+    """
+    An object that ostensibly has a spec attribute but really delegates to the
+    spec registry.
+
+    """
+    def __init__(self, spec=None, spec_id=None, **kwargs):
+
+        spec_attrs = dict((k, v) for k, v in kwargs.items() if v is not None)
+
+        if spec_attrs:
+            if spec:
+                raise TypeError('You can provide either an image spec or'
+                    ' arguments for the ImageSpec constructor, but not both.')
+            else:
+                spec = create_spec_class(spec_attrs)
+
+        self._original_spec = spec
+
+        if spec_id:
+            self.set_spec_id(spec_id)
+
+    def set_spec_id(self, id):
+        """
+        Sets the spec id for this object. Useful for when the id isn't
+        known when the instance is constructed (e.g. for ImageSpecFields whose
+        generated `spec_id`s are only known when they are contributed to a
+        class). If the object was initialized with a spec, it will be registered
+        under the provided id.
+
+        """
+        self.spec_id = id
+
+        if self._original_spec:
+            try:
+                register.generator(id, self._original_spec)
+            except AlreadyRegistered:
+                # Fields should not cause AlreadyRegistered exceptions. If a
+                # spec is already registered, that should be used. It is
+                # especially important that an error is not thrown here because
+                # of South, which will create duplicate models as part of its
+                # "fake orm," therefore re-registering specs.
+                pass
+
+    def get_spec(self, source):
+        """
+        Look up the spec by the spec id. We do this (instead of storing the
+        spec as an attribute) so that users can override apps' specs--without
+        having to edit model definitions--simply by registering another spec
+        with the same id.
+
+        """
+        if not getattr(self, 'spec_id', None):
+            raise Exception('Object %s has no spec id.' % self)
+        return generator_registry.get(self.spec_id, source=source)
