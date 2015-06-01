@@ -41,7 +41,7 @@ class ModelSignalRouter(object):
     def __init__(self):
         self._source_groups = []
         uid = 'ik_spec_field_receivers'
-        post_init.connect(self.post_init_receiver, dispatch_uid=uid)
+        post_init.connect(self.post_init_receiver)
         # post_save.connect(self.post_save_receiver, dispatch_uid=uid)
 
     def add(self, source_group):
@@ -89,9 +89,11 @@ class ModelSignalRouter(object):
     def post_init_receiver(self, sender, instance=None, **kwargs):
         self.init_instance(instance)
         source_fields = self.get_source_fields(instance)
-        local_fields = dict((field.name, field)
-                            for field in instance._meta.local_fields
-                            if field.name in source_fields)
+
+        # TODO - Factor this out to work with other model libraries besides Mongoengine
+        local_fields = dict((field_name, field)
+                            for field_name, field in instance._fields.iteritems()
+                            if field_name in source_fields)
         instance._ik['source_hashes'] = dict(
             (attname, hash(file_field))
             for attname, file_field in local_fields.items())

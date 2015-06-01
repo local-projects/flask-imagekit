@@ -60,8 +60,7 @@ class ImageSpecField(SpecHostField):
             raise Exception("Must define a source")
 
 def model_init_decorator(func):
-    @wraps
     def model_init(self, *args, **kwargs):
         func(self, *args, **kwargs)
-        post_init.send(sender=self.__class__, instance=self)
+        post_init.send(self.__class__, instance=self)
     return model_init

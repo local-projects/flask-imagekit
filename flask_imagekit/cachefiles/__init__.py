@@ -1,6 +1,6 @@
 
 # TODO - STUB
-class ImageCacheFile():
+class ImageCacheFile(object):
     pass
 
 # TODO - STUB
