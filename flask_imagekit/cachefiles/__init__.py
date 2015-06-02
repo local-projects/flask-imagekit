@@ -149,13 +149,6 @@ class ImageCacheFile(BaseIKFile):
         # Python 2 compatibility
         return self.__bool__()
 
-    # TODO - For testing purposes
-    #def __str__(self):
-    #    return str("<%s: %s>" % (self.__class__.__name__, self or "None"))
-
-    def __repr__(self):
-        return str("<%s: %s>" % (self.__class__.__name__, self or "None"))
-
 
 # TODO - STUB
 class LazyImageCacheFile():
