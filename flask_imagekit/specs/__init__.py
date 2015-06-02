@@ -1,4 +1,4 @@
-import flask_imagekit.conf as conf
+from .. import conf
 from copy import copy
 from ..exceptions import MissingSource, AlreadyRegistered
 from ..cachefiles.backends import get_default_cachefile_backend

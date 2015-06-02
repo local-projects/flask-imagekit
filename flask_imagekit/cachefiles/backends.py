@@ -1,6 +1,7 @@
 from ..utils import get_singleton, get_cache, sanitize_cache_key
 from copy import copy
-import flask_imagekit.conf as conf
+from .. import conf
+
 
 class CacheFileState(object):
     EXISTS = 'exists'
@@ -30,7 +31,7 @@ class CachedFileBackend(object):
     @property
     def cache(self):
         if not getattr(self, '_cache', None):
-            self._CACHE = get_cache(conf.IMAGEKIT_CACHE_BACKEND)
+            self._cache = get_cache
         return self._cache
 
     def get_key(self, file):

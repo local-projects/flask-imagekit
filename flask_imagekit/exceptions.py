@@ -20,6 +20,10 @@ class MissingSource(ValueError):
 class ImproperlyConfigured(Exception):
     pass
 
+
+class SuspiciousFileOperation(Exception):
+    pass
+
 # Aliases for backwards compatibility
 UnknownExtensionError = UnknownExtension
 UnknownFormatError = UnknownFormat

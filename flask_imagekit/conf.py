@@ -1,12 +1,17 @@
 
 # TODO - MAKE TO WORK WITH FLASK CONFIG
+MEDIA_ROOT = '/tmp/flask-imagekit/'
+MEDIA_URL = '/static/'
+FILE_UPLOAD_PERMISSIONS = None
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = None
+
 IMAGEKIT_CACHEFILE_NAMER = 'flask_imagekit.cachefiles.namers.hash'
 IMAGEKIT_SPEC_CACHEFILE_NAMER = 'flask_imagekit.cachefiles.namers.source_name_as_path'
 IMAGEKIT_CACHEFILE_DIR = 'CACHE/images'
 IMAGEKIT_DEFAULT_CACHEFILE_BACKEND = 'flask_imagekit.cachefiles.backends.Simple'
 IMAGEKIT_DEFAULT_CACHEFILE_STRATEGY = 'flask_imagekit.cachefiles.strategies.JustInTime'
 
-IMAGEKIT_DEFAULT_FILE_STORAGE = None
+IMAGEKIT_DEFAULT_FILE_STORAGE = 'flask_imagekit.django_ported.storage.FileSystemStorage'
 
 IMAGEKIT_CACHE_BACKEND = None
 IMAGEKIT_CACHE_PREFIX = 'imagekit:'

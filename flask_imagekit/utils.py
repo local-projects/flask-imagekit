@@ -1,11 +1,13 @@
-import flask_imagekit.conf as conf
+from . import conf
 import re
+import random, string
 
 # TODO - Does SimpleCache suffice?
 from werkzeug.contrib.cache import SimpleCache
 from hashlib import md5
 from .exceptions import ImproperlyConfigured
 from importlib import import_module
+from tempfile import NamedTemporaryFile
 from pilkit.utils import *
 
 bad_memcached_key_chars = re.compile('[\u0000-\u001f\\s]+')
@@ -54,6 +56,27 @@ def get_singleton(class_path, desc):
 def autodiscover():
     pass
 
+
+def generate(generator):
+    """
+    Calls the ``generate()`` method of a generator instance, and then wraps the
+    result in a Django File object so Django knows how to save it.
+
+    """
+    content = generator.generate()
+
+    # If the file doesn't have a name, Django will raise an Exception while
+    # trying to save it, so we create a named temporary file.
+    if not getattr(content, 'name', None):
+        f = NamedTemporaryFile()
+        f.write(content.read())
+        f.seek(0)
+        content = f
+
+    # TODO - Figure this out
+    return File(content)
+
+
 def call_strategy_method(file, method_name):
     strategy = getattr(file, 'cachefile_strategy', None)
     fn = getattr(strategy, method_name, None)
@@ -73,5 +96,6 @@ def sanitize_cache_key(key):
 
         key = new_key
     return key
+
 
 get_cache = SimpleCache()
