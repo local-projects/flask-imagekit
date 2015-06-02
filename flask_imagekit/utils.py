@@ -8,6 +8,7 @@ from hashlib import md5
 from .exceptions import ImproperlyConfigured
 from importlib import import_module
 from tempfile import NamedTemporaryFile
+from django_ported.files import File
 from pilkit.utils import *
 
 bad_memcached_key_chars = re.compile('[\u0000-\u001f\\s]+')
@@ -73,7 +74,6 @@ def generate(generator):
         f.seek(0)
         content = f
 
-    # TODO - Figure this out
     return File(content)
 
 

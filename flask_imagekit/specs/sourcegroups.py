@@ -3,6 +3,7 @@ from functools import wraps
 from ..cachefiles import LazyImageCacheFile
 from ..signals import post_init
 from ..utils import get_nonabstract_descendants
+from ..model_helpers import get_local_fields
 
 def ik_model_receiver(fn):
     """
@@ -91,9 +92,7 @@ class ModelSignalRouter(object):
         source_fields = self.get_source_fields(instance)
 
         # TODO - Factor this out to work with other model libraries besides Mongoengine
-        local_fields = dict((field_name, field)
-                            for field_name, field in instance._fields.iteritems()
-                            if field_name in source_fields)
+        local_fields = get_local_fields(instance, source_fields)
         instance._ik['source_hashes'] = dict(
             (attname, hash(file_field))
             for attname, file_field in local_fields.items())
