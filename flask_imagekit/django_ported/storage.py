@@ -7,8 +7,8 @@ from inspect import getargspec
 from urlparse import urljoin
 from .files import File
 from .utils import get_valid_filename, get_random_string, filepath_to_uri
+from ..utils import conf
 from ..exceptions import SuspiciousFileOperation
-from .. import conf
 
 __all__ = ('Storage', 'FileSystemStorage')
 

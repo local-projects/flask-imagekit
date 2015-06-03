@@ -1,9 +1,8 @@
-from .. import conf
 from copy import copy
 from ..exceptions import MissingSource, AlreadyRegistered
 from ..cachefiles.backends import get_default_cachefile_backend
 from ..cachefiles.strategies import load_strategy
-from ..utils import open_image, get_by_qname, process_image
+from ..utils import open_image, get_by_qname, process_image, conf
 from .. import hashers
 from ..registry import generator_registry, register
 from ..model_helpers import get_image

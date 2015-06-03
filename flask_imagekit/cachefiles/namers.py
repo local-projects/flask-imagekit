@@ -6,8 +6,7 @@ choices.
 """
 
 import os
-from ..utils import format_to_extension, suggest_extension
-from .. import conf
+from ..utils import format_to_extension, suggest_extension, conf
 
 
 def source_name_as_path(generator):

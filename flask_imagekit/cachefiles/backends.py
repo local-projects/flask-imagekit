@@ -1,6 +1,5 @@
-from ..utils import get_singleton, get_cache, sanitize_cache_key
+from ..utils import get_singleton, get_cache, sanitize_cache_key, get_flask_app, conf
 from copy import copy
-from .. import conf
 
 
 class CacheFileState(object):
@@ -70,8 +69,12 @@ class CachedFileBackend(object):
     def generate_now(self, file, force=False):
         if force or self.get_state(file) not in (CacheFileState.GENERATING, CacheFileState.EXISTS):
             self.set_state(file, CacheFileState.GENERATING)
-            file._generate()
-            self.set_state(file, CacheFileState.EXISTS)
+            try:
+                file._generate()
+                self.set_state(file, CacheFileState.EXISTS)
+            except Exception, err:
+                get_flask_app().logger.warning("Exception generating file, marking file as not existing: %s" % err)
+                self.set_state(file, CacheFileState.DOES_NOT_EXIST)
 
 
 class Simple(CachedFileBackend):

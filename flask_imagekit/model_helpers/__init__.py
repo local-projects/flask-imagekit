@@ -1,5 +1,6 @@
 import os
-from .. import conf
+from ..utils import conf
+
 
 def get_local_fields(model, source_fields):
     """

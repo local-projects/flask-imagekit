@@ -1,9 +1,7 @@
-from flask import current_app as app
 from copy import copy
 from ..files import BaseIKFile
 from ..signals import content_required, existence_required
-from ..utils import get_singleton, generate, get_by_qname
-from .. import conf
+from ..utils import get_singleton, generate, get_by_qname, get_flask_app, conf
 from ..django_ported.files import File
 
 
@@ -108,7 +106,7 @@ class ImageCacheFile(BaseIKFile):
 
         if actual_name != self.name:
             # TODO - Figure out logger or delete this
-            app.logger.warning(
+            get_flask_app().logger.warning(
                 'The storage backend %s did not save the file with the'
                 ' requested name ("%s") and instead used "%s". This may be'
                 ' because a file already existed with the requested name. If'

@@ -1,4 +1,3 @@
-from . import conf
 import re
 import random, string
 
@@ -13,6 +12,15 @@ from pilkit.utils import *
 
 bad_memcached_key_chars = re.compile('[\u0000-\u001f\\s]+')
 
+
+flask_app = None
+
+def get_flask_app():
+    return flask_app
+
+def set_flask_app(app):
+    global flask_app
+    flask_app = app
 
 def get_nonabstract_descendants(model):
     """ Returns all non-abstract descendants of the model. """
@@ -52,6 +60,18 @@ def get_singleton(class_path, desc):
     if not instance:
         instance = _singletons[cls] = cls()
     return instance
+
+
+def get_conf():
+    from .conf import Conf
+    global _singletons
+    instance = _singletons.get(Conf)
+    if not instance:
+        instance = _singletons[Conf] = Conf()
+    return instance
+
+
+conf = get_conf()
 
 # TODO: Not functionally required but should find a non django way to port
 def autodiscover():

@@ -1,5 +1,5 @@
 from ...cachefiles import ImageCacheFile
-from flask import current_app as app
+from ...utils import get_flask_app
 
 class ImageSpecFileDescriptor(object):
     def __init__(self, field, attname, source_field_name):
@@ -17,7 +17,7 @@ class ImageSpecFileDescriptor(object):
             if file:
                 instance.__dict__[self.attname] = file
             else:
-                app.logger.warn("Imagekit file could not be created")
+                get_flask_app().logger.warn("Imagekit file could not be created")
             return file
 
     def __set__(self, instance, value):
