@@ -2,10 +2,10 @@ from copy import copy
 from ..files import BaseIKFile
 from ..signals import content_required, existence_required
 from ..utils import get_singleton, generate, get_by_qname, get_flask_app, conf
-from ..django_ported.files import File
+from ..django_ported.files import File, ImageFile
 
 
-class ImageCacheFile(BaseIKFile):
+class ImageCacheFile(BaseIKFile, ImageFile):
     """
     A file that represents the result of a generator. Creating an instance of
     this class is not enough to trigger the generation of the file. In fact,

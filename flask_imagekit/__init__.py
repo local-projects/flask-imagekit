@@ -1,12 +1,17 @@
+from .specs import ImageSpec
+from .registry import register, unregister
+
+
 def initialize_imagekit(admin, **kwargs):
     from .utils import set_flask_app, conf
     conf.set_configs(**kwargs)
     set_flask_app(admin.app)
 
+    from .template import generateimage
+    admin.app.add_template_global(generateimage)
+
     views = admin._views
 
-    from .specs import ImageSpec
-    from .registry import register, unregister
     for view in views:
         if hasattr(view, 'model'):
             attributes = dir(view.model)
