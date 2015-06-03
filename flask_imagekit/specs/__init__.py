@@ -6,6 +6,7 @@ from ..cachefiles.strategies import load_strategy
 from ..utils import open_image, get_by_qname, process_image
 from .. import hashers
 from ..registry import generator_registry, register
+from ..model_helpers import get_image
 
 class BaseImageSpec(object):
     """
@@ -111,8 +112,17 @@ class ImageSpec(BaseImageSpec):
         return state
 
     def get_hash(self):
+        # At this point the source might be data
+        # or a unicode describing the path to data.
+        # In either case, we just need an identifier
+        # for the hash
+        if isinstance(self.source, basestring):
+            name = self.source
+        else:
+            name = self.source.name
+
         return hashers.pickle([
-            self.source.name,
+            name,
             self.processors,
             self.format,
             self.options,
@@ -127,7 +137,7 @@ class ImageSpec(BaseImageSpec):
         # TODO: Move into a generator base class
         # TODO: Factor out a generate_image function so you can create a generator and only override the PIL.Image creating part. (The tricky part is how to deal with original_format since generator base class won't have one.)
         try:
-            img = open_image(self.source)
+            img = open_image(get_image(self.source))
         except ValueError:
 
             # Re-open the file -- https://code.djangoproject.com/ticket/13750

@@ -106,7 +106,7 @@ class ModelSignalRouter(object):
         """
         for source_group in self._source_groups:
             if issubclass(model_class, source_group.model_class) and source_group.image_field == attname:
-                signal.send(sender=source_group, source=file)
+                signal.send(source_group, source=file)
 
 
 class ImageFieldSourceGroup(object):

@@ -56,7 +56,7 @@ class ImageCacheFile(BaseIKFile):
 
     def _require_file(self):
         if getattr(self, '_file', None) is None:
-            content_required.send(sender=self, file=self)
+            content_required.send(self, file=self)
             self._file = self.storage.open(self.name, 'rb')
 
     # The ``path`` and ``url`` properties are overridden so as to not call
@@ -69,7 +69,7 @@ class ImageCacheFile(BaseIKFile):
 
     def _storage_attr(self, attr):
         if getattr(self, '_file', None) is None:
-            existence_required.send(sender=self, file=self)
+            existence_required.send(self, file=self)
         fn = getattr(self.storage, attr)
         return fn(self.name)
 
