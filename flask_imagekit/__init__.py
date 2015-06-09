@@ -12,18 +12,16 @@ def initialize_imagekit(admin, **kwargs):
 
     views = admin._views
 
-    for view in views:
-        if hasattr(view, 'model'):
-            attributes = dir(view.model)
-            for attr in [nodash for nodash in attributes if not nodash.startswith('_')]:
-                from .models import ImageSpecField
-                try:
-                    # Some model attributes may attempt to access a request object
-                    # So we supply them with a dummy context to stop exceptions
-                    with admin.app.test_request_context():
+    # Some model attributes may attempt to access a request object
+    # So we supply them with a dummy context to stop exceptions
+    with admin.app.test_request_context():
+        from .models import ImageSpecField
+
+        for view in views:
+                if hasattr(view, 'model'):
+                    attributes = dir(view.model)
+                    for attr in [nodash for nodash in attributes if not nodash.startswith('_')]:
                         field = getattr(view.model, attr, None)
 
                         if isinstance(field, ImageSpecField):
                             field.contribute_to_class(view.model, attr)
-                except:
-                    pass

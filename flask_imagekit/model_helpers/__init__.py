@@ -27,11 +27,28 @@ def get_image(field):
         return field
     elif isinstance(field, basestring):
         # The field might be a string representing the path to the image
-        file_path = os.path.join(conf.MEDIA_ROOT, field)
-        file = open(file_path, 'rb')
-        if file:
-            return file
+        # or it may be an external url
+
+        if field.startswith('http'):
+            import requests
+            import shutil
+            from StringIO import StringIO
+
+            file = StringIO()
+            r = requests.get(field, stream=True)
+            if r.status_code == 200:
+                if not r.headers.get('content-type').startswith('image'):
+                    raise Exception("Not an image file, content type is: %s for file: %s " % (r.headers.get('content-type'), field))
+                shutil.copyfileobj(r.raw, file)
+                return file
+            else:
+                raise Exception("Http response: %s, trying to get file %s" % (r.status_code, field))
         else:
-            raise Exception("Could not open a valid file for path: %s" % file_path)
+            file_path = os.path.join(conf.MEDIA_ROOT, field)
+            file = open(file_path, 'rb')
+            if file:
+                return file
+            else:
+                raise Exception("Could not open a valid file for path: %s" % file_path)
 
     raise Exception("Could not determine a way to extract data from the supplied field: %s" % field)
