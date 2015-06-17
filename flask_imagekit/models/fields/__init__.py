@@ -70,7 +70,8 @@ class ImageSpecField(SpecHostField):
 
             # We don't have the equivalent of a post_init signal,
             # so we must make our own with a decorator
-            cls.__init__ = model_init_decorator(cls.__init__)
+            if cls.__init__.__name__ != "model_init":
+                cls.__init__ = model_init_decorator(cls.__init__)
 
             # Add the model and field as a source for this spec id
             register.source_group(self.spec_id, ImageFieldSourceGroup(cls, source))
