@@ -11,6 +11,12 @@ class Conf():
     FILE_UPLOAD_PERMISSIONS = None
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = None
 
+    S3_KEY = None
+    S3_SECRET = None
+    S3_BUCKET = None
+
+    BASE_PREFIX = ''
+
     IMAGEKIT_CACHEFILE_NAMER = 'flask_imagekit.cachefiles.namers.hash'
     IMAGEKIT_SPEC_CACHEFILE_NAMER = 'flask_imagekit.cachefiles.namers.source_name_as_path'
     IMAGEKIT_CACHEFILE_DIR = 'CACHE/images'

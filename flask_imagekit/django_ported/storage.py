@@ -307,3 +307,99 @@ class FileSystemStorage(Storage):
 
     def modified_time(self, name):
         return datetime.fromtimestamp(os.path.getmtime(self.path(name)))
+
+
+class S3Storage(Storage):
+    """
+    S3 filesystem storage
+    """
+    def __init__(self, location=None, base_url=None, **kwargs):
+        if location is None:
+            location = conf.MEDIA_ROOT
+        self.location = location
+        if base_url is None:
+            base_url = conf.MEDIA_URL
+        elif not base_url.endswith('/'):
+            base_url += '/'
+        self.base_url = base_url
+
+        self.s3_key = conf.S3_KEY
+        self.s3_secret = conf.S3_SECRET
+        self.s3_bucket = conf.S3_BUCKET
+
+        self.prefix = conf.BASE_PREFIX
+
+        self._entries = {}
+        self._bucket = None
+        self._connection = None
+
+    @property
+    def connection(self):
+        import boto
+        if self._connection is None:
+            self._connection = boto.connect_s3(self.s3_key, self.s3_secret)
+
+        return self._connection
+
+    @property
+    def bucket(self):
+        """
+        Get the current bucket. If there is no current bucket object
+        create it.
+        """
+        if self._bucket is None:
+            self._bucket = self._get_or_create_bucket(self.s3_bucket)
+        return self._bucket
+
+    @property
+    def entries(self):
+        """
+        Get the locally cached files for the bucket.
+        """
+        if not self._entries:
+            self._entries = dict((entry.key, entry)
+                                 for entry in self.bucket.list(prefix=self.prefix))
+        return self._entries
+
+    def _get_or_create_bucket(self, name):
+        """
+        Retrieves a bucket if it exists, otherwise creates it.
+        """
+        try:
+            return self.connection.get_bucket(name)
+        except Exception:
+            raise Exception("Bucket %s does not exist.")
+
+    def _open(self, name, mode='rb'):
+        name = self.get_name(name)
+        f = file
+        self.bucket.new_key(name).get_file(f)
+        return File(f, mode)
+
+    def _save(self, name, content):
+        name = self.get_name(name)
+        key = self.bucket.new_key(name)
+        key.set_contents_from_file(content)
+        key.make_public()
+        return name
+
+    def exists(self, name):
+        name = self.get_name(name)
+        if self.entries:
+            return name in self.entries
+        k = self.bucket.new_key(name)
+        return k.exists()
+
+    def path(self, name):
+        name = self.get_name(name)
+        return os.path.join(self.location, name)
+
+    def url(self, name):
+        name = self.get_name(name)
+        if self.base_url is None:
+            raise ValueError("This file is not accessible via a URL.")
+        return urljoin(self.base_url, filepath_to_uri(name))
+
+    def get_name(self, name):
+        import os
+        return os.path.join(self.prefix, name)
