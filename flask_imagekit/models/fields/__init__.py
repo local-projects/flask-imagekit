@@ -41,6 +41,27 @@ class ImageSpecField(SpecHostField):
         # TODO: Allow callable for source. See https://github.com/matthewwithanm/django-imagekit/issues/158#issuecomment-10921664
         self.source = source
         self.calling_ourselves = False
+        self.nested = False
+
+    def __get__(self, instance, owner):
+
+        # Because we don't have the equivalent of contribute_to_class
+        # in flask, we trigger it when the field is first gotten
+        if instance is None or self.nested:
+            self.nested = False
+            return self
+
+        self.nested = True
+        attrname = ''
+        for attr in [nodash for nodash in dir(owner) if not nodash.startswith('_')]:
+            if self == getattr(instance, attr):
+                attrname = attr
+                break
+        self.contribute_to_class(owner, attrname)
+        post_init.send(owner, instance=instance)
+
+        # This should now be set to an ImageSpecFileDescriptor
+        return getattr(instance, attrname)
 
     def contribute_to_class(self, cls, name):
         def register_source_group(source):
@@ -49,7 +70,8 @@ class ImageSpecField(SpecHostField):
 
             # We don't have the equivalent of a post_init signal,
             # so we must make our own with a decorator
-            cls.__init__ = model_init_decorator(cls.__init__)
+            if cls.__init__.__name__ != "model_init":
+                cls.__init__ = model_init_decorator(cls.__init__)
 
             # Add the model and field as a source for this spec id
             register.source_group(self.spec_id, ImageFieldSourceGroup(cls, source))
