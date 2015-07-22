@@ -30,7 +30,7 @@ class GenerateImage():
         return Markup('<img %s />' % attr_str)
 
 
-def generateimage(generator_id, html_attrs, **generator_kwargs):
+def generateimage(generator_id, html_attrs={}, **generator_kwargs):
     """
     Creates an image based on the provided arguments.
     By default::
