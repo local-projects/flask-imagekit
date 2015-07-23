@@ -22,17 +22,14 @@ def get_image(field):
     """
     Get a file like object containing the content of the field's image
     """
-    if hasattr(field, 'seek') and hasattr(field, 'read'):
-        # The field itself can be treated as a file like object, just return it
-        return field
-    elif isinstance(field, basestring):
+    def handle_string(string):
         # The field might be a string representing the path to the image
         # or it may be an external url
 
-        if field.startswith('http'):
-            return get_http_asset(field)
+        if string.startswith('http'):
+            return get_http_asset(string)
         else:
-            file_path = os.path.join(conf.MEDIA_ROOT, conf.BASE_PREFIX, field)
+            file_path = os.path.join(conf.MEDIA_ROOT, conf.BASE_PREFIX, string)
             if file_path.startswith('http'):
                 return get_http_asset(file_path)
             file = open(file_path, 'rb')
@@ -40,6 +37,17 @@ def get_image(field):
                 return file
             else:
                 raise Exception("Could not open a valid file for path: %s" % file_path)
+
+    # Embedded documents should have a way of representing themselves in a way we can use
+    # We offer them this ability through a method "to_imagekit"
+    if hasattr(field, 'to_imagekit'):
+        string = field.to_imagekit()
+        return handle_string(string)
+    elif hasattr(field, 'seek') and hasattr(field, 'read'):
+        # The field itself can be treated as a file like object, just return it
+        return field
+    elif isinstance(field, basestring):
+        return handle_string(field)
 
     raise Exception("Could not determine a way to extract data from the supplied field: %s" % field)
 
