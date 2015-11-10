@@ -23,7 +23,10 @@ def source_name_as_path(generator):
     ``IMAGEKIT_CACHEFILE_DIR`` setting.
 
     """
-    source_filename = getattr(generator.source, 'name', None)
+    if isinstance(generator.source, basestring):
+        source_filename = generator.source
+    else:
+        source_filename = getattr(generator.source, 'name', None)
 
     if source_filename is None or os.path.isabs(source_filename):
         # Generally, we put the file right in the cache file directory.
