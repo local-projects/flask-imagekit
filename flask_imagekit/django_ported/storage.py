@@ -367,8 +367,8 @@ class S3Storage(Storage):
         """
         try:
             return self.connection.get_bucket(name)
-        except Exception:
-            raise Exception("Bucket %s does not exist.")
+        except Exception as e:
+            raise Exception("Bucket %s does not exist." % name)
 
     def _open(self, name, mode='rb'):
         name = self.get_name(name)
