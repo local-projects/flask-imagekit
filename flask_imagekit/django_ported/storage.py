@@ -2,6 +2,7 @@ import errno
 import os
 import locks
 import shutil
+from StringIO import StringIO
 from datetime import datetime
 from inspect import getargspec
 from urlparse import urljoin
@@ -311,7 +312,15 @@ class FileSystemStorage(Storage):
 
 class S3Storage(Storage):
     """
-    S3 filesystem storage
+    Amazon Simple Storage Service using Boto
+
+    This storage backend supports opening files in read or write
+    mode and supports streaming(buffering) data in chunks to S3
+    when writing.
+
+    This is based on iserko's "django-storages"
+    (https://github.com/iserko/django-storages/blob/master/storages/backends/s3boto.py)
+    Modified to work with flask_imagekit
     """
     def __init__(self, location=None, base_url=None, **kwargs):
         if location is None:
@@ -372,9 +381,10 @@ class S3Storage(Storage):
 
     def _open(self, name, mode='rb'):
         name = self.get_name(name)
-        f = file
-        self.bucket.new_key(name).get_file(f)
-        return File(f, mode)
+        f = S3BotoStorageFile(name, mode, self)
+        if not f.key:
+            raise IOError('File does not exist: %s' % name)
+        return f
 
     def _save(self, name, content):
         name = self.get_name(name)
@@ -403,3 +413,115 @@ class S3Storage(Storage):
     def get_name(self, name):
         import os
         return os.path.join(self.prefix, name)
+
+    def _encode_name(self, name):
+        return name.encode('utf-8')
+
+
+class S3BotoStorageFile(File):
+    """
+    The default file object used by the S3BotoStorage backend.
+
+    This file implements file streaming using boto's multipart
+    uploading functionality. The file can be opened in read or
+    write mode.
+    This class extends Django's File class. However, the contained
+    data is only the data contained in the current buffer. So you
+    should not access the contained file object directly. You should
+    access the data via this class.
+    Warning: This file *must* be closed using the close() method in
+    order to properly write the file to S3. Be sure to close the file
+    in your application.
+
+    This is ported from iserko's "django-storages"
+    (https://github.com/iserko/django-storages/blob/master/storages/backends/s3boto.py)
+    Modified to work with flask_imagekit
+    """
+
+    def __init__(self, name, mode, storage, buffer_size=5242880):
+        self._storage = storage
+        self.name = name[len(self._storage.location):].lstrip('/')
+        self._mode = mode
+        self.key = storage.bucket.get_key(self._storage._encode_name(name))
+        if not self.key and 'w' in mode:
+            self.key = storage.bucket.new_key(storage._encode_name(name))
+        self._is_dirty = False
+        self._file = None
+        self._multipart = None
+        # 5 MB is the minimum part size (if there is more than one part).
+        # Amazon allows up to 10,000 parts.  The default supports uploads
+        # up to roughly 50 GB.  Increase the part size to accommodate
+        # for files larger than this.
+        self._write_buffer_size = buffer_size
+        self._write_counter = 0
+
+    @property
+    def size(self):
+        return self.key.size
+
+    @property
+    def file(self):
+        if self._file is None:
+            self._file = StringIO()
+            if 'r' in self._mode:
+                self._is_dirty = False
+                self.key.get_contents_to_file(self._file)
+                self._file.seek(0)
+        return self._file
+
+    def read(self, *args, **kwargs):
+        if 'r' not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return super(S3BotoStorageFile, self).read(*args, **kwargs)
+
+    def write(self, *args, **kwargs):
+        if 'w' not in self._mode:
+            raise AttributeError("File was not opened in write mode.")
+        self._is_dirty = True
+        if self._multipart is None:
+            provider = self.key.bucket.connection.provider
+            upload_headers = {
+                provider.acl_header: self._storage.acl
+            }
+            upload_headers.update(self._storage.headers)
+            self._multipart = self._storage.bucket.initiate_multipart_upload(
+                self.key.name,
+                headers = upload_headers,
+                reduced_redundancy = self._storage.reduced_redundancy
+            )
+        if self._write_buffer_size <= self._buffer_file_size:
+            self._flush_write_buffer()
+        return super(S3BotoStorageFile, self).write(*args, **kwargs)
+
+    @property
+    def _buffer_file_size(self):
+        pos = self.file.tell()
+        self.file.seek(0,os.SEEK_END)
+        length = self.file.tell()
+        self.file.seek(pos)
+        return length
+
+    def _flush_write_buffer(self):
+        """
+        Flushes the write buffer.
+        """
+        if self._buffer_file_size:
+            self._write_counter += 1
+            self.file.seek(0)
+            self._multipart.upload_part_from_file(
+                self.file,
+                self._write_counter,
+                headers=self._storage.headers
+            )
+            self.file.close()
+            self._file = None
+
+    def close(self):
+        if self._is_dirty:
+            self._flush_write_buffer()
+            self._multipart.complete_upload()
+        else:
+            if not self._multipart is None:
+                self._multipart.cancel_upload()
+        self.key.close()
+
