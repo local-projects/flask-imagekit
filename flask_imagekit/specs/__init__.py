@@ -143,6 +143,12 @@ class ImageSpec(BaseImageSpec):
             self.source.open()
             img = open_image(self.source)
 
+        if getattr(self, 'maintain_alpha', False) and img.mode == 'RGBA':
+            alpha = img.split()[-1]
+            all_pixel = alpha.width * alpha.height
+            if alpha.histogram()[255] != all_pixel:
+                self.format = img.format
+
         return process_image(img, processors=self.processors,
                              format=self.format, autoconvert=self.autoconvert,
                              options=self.options)
