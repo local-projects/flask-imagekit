@@ -72,7 +72,7 @@ class CachedFileBackend(object):
             try:
                 file._generate()
                 self.set_state(file, CacheFileState.EXISTS)
-            except Exception, err:
+            except Exception as err:
                 get_flask_app().logger.warning("Exception generating file, marking file as not existing: %s" % err)
                 self.set_state(file, CacheFileState.DOES_NOT_EXIST)
 
